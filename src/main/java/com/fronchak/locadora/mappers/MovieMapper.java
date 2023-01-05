@@ -11,7 +11,7 @@ import com.fronchak.locadora.entities.Movie;
 @Service
 public class MovieMapper {
 
-	public Page<MovieOutputAllDTO> convertEntityToOutputAllDTO(Page<Movie> page) {
+	public Page<MovieOutputAllDTO> convertEntityPageToOutputAllDTOPage(Page<Movie> page) {
 		return page.map(entity -> new MovieOutputAllDTO(entity));
 	}
 	

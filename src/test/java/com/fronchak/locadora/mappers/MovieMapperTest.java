@@ -29,7 +29,7 @@ public class MovieMapperTest {
 	@Test
 	public void convertEntityPageToOutputAllDTOPageShouldConvertCorrectly() {
 		Page<Movie> page = MovieMocksFactory.mockMovieEntityPage();
-		Page<MovieOutputAllDTO> resultPage = mapper.convertEntityToOutputAllDTO(page);
+		Page<MovieOutputAllDTO> resultPage = mapper.convertEntityPageToOutputAllDTOPage(page);
 		CustomizeAsserts.assertMovieOutputAllDTOPage(resultPage);
 	}
 	
