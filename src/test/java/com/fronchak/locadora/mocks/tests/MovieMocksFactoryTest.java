@@ -9,8 +9,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.data.domain.Page;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import com.fronchak.locadora.dtos.movie.MovieInsertDTO;
 import com.fronchak.locadora.dtos.movie.MovieOutputAllDTO;
 import com.fronchak.locadora.dtos.movie.MovieOutputDTO;
+import com.fronchak.locadora.dtos.movie.MovieUpdateDTO;
 import com.fronchak.locadora.entities.Movie;
 import com.fronchak.locadora.mocks.MovieMocksFactory;
 import com.fronchak.locadora.util.CustomizeAsserts;
@@ -68,5 +70,23 @@ public class MovieMocksFactoryTest {
 	public void mockMovieOutputDTOShouldMockValuesCorrectly() {
 		MovieOutputDTO result = MovieMocksFactory.mockMovieOutputDTO();
 		CustomizeAsserts.assertMovieOutputDTO(result);
+	}
+	
+	@Test
+	public void mockMovieInsertDTOShouldMockValuesCorrectly() {
+		MovieInsertDTO result = MovieMocksFactory.mockMovieInsertDTO();
+		assertEquals("Mock movie title 0", result.getTitle());
+		assertEquals("Mock movie synopsis 0", result.getSynopsis());
+		assertEquals(100, result.getDurationInMinutes());
+		assertEquals(1.0, result.getNote());
+	}
+	
+	@Test
+	public void mockMovieUpdateDTOShouldMockValuesCorrectly() {
+		MovieUpdateDTO result = MovieMocksFactory.mockMovieUpdateDTO();
+		assertEquals("Mock movie title 0", result.getTitle());
+		assertEquals("Mock movie synopsis 0", result.getSynopsis());
+		assertEquals(100, result.getDurationInMinutes());
+		assertEquals(1.0, result.getNote());
 	}
 }

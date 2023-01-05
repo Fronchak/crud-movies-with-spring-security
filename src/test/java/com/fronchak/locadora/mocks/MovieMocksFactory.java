@@ -6,8 +6,11 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 
+import com.fronchak.locadora.dtos.movie.MovieInputDTO;
+import com.fronchak.locadora.dtos.movie.MovieInsertDTO;
 import com.fronchak.locadora.dtos.movie.MovieOutputAllDTO;
 import com.fronchak.locadora.dtos.movie.MovieOutputDTO;
+import com.fronchak.locadora.dtos.movie.MovieUpdateDTO;
 import com.fronchak.locadora.entities.Movie;
 
 public class MovieMocksFactory {
@@ -88,5 +91,21 @@ public class MovieMocksFactory {
 		mock.setDurationInMinutes(mockDurationInMinutes(i));
 		mock.setNote(mockNote(i));
 		return mock;
+	}
+	
+	public static MovieInsertDTO mockMovieInsertDTO() {
+		return (MovieInsertDTO) mockMovieInputDTO(new MovieInsertDTO(), 0);
+	}
+	
+	public static MovieInputDTO mockMovieInputDTO(MovieInputDTO mock, int i) {
+		mock.setTitle(mockTitle(i));
+		mock.setSynopsis(mockSynopsis(i));
+		mock.setDurationInMinutes(mockDurationInMinutes(i));
+		mock.setNote(mockNote(i));
+		return mock;
+	}
+
+	public static MovieUpdateDTO mockMovieUpdateDTO() {
+		return (MovieUpdateDTO) mockMovieInputDTO(new MovieUpdateDTO(), 0);
 	}
 }
