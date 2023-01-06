@@ -14,4 +14,10 @@ public class ResourceNotFoundExceptionTest {
 		ResourceNotFoundException result = new ResourceNotFoundException("Movie", "2");
 		assertEquals("Entity Movie not found by ID: 2", result.getMessage());
 	}
+	
+	@Test
+	public void getErrorShouldReturnEntityNotFound() {
+		String result = ResourceNotFoundException.getError();
+		assertEquals("Entity not found", result);
+	}
 }

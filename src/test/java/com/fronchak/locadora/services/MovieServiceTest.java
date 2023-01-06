@@ -1,8 +1,10 @@
 package com.fronchak.locadora.services;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -18,6 +20,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -27,6 +31,7 @@ import com.fronchak.locadora.dtos.movie.MovieOutputAllDTO;
 import com.fronchak.locadora.dtos.movie.MovieOutputDTO;
 import com.fronchak.locadora.dtos.movie.MovieUpdateDTO;
 import com.fronchak.locadora.entities.Movie;
+import com.fronchak.locadora.exceptions.DatabaseException;
 import com.fronchak.locadora.exceptions.ResourceNotFoundException;
 import com.fronchak.locadora.mappers.MovieMapper;
 import com.fronchak.locadora.mocks.MovieMocksFactory;
@@ -125,5 +130,25 @@ public class MovieServiceTest {
 	@Test
 	public void updateShouldThrowResourceNotFoundExceptionWhenIdDoesNotExist() {
 		assertThrows(ResourceNotFoundException.class, () -> service.update(mock(MovieUpdateDTO.class), INVALID_ID));
+	}
+	
+	@Test
+	public void deleteShouldDeleteEntityWhenIdExists() {
+		assertDoesNotThrow(() -> service.delete(VALID_ID));
+		verify(repository, times(1)).deleteById(VALID_ID);
+	}
+	
+	@Test
+	public void deleteShouldThrowResourceNotFoundExceptionWhenIdDoesNotExist() {
+		doThrow(EmptyResultDataAccessException.class).when(repository).deleteById(INVALID_ID);
+		assertThrows(ResourceNotFoundException.class, () -> service.delete(INVALID_ID));
+		verify(repository, times(1)).deleteById(INVALID_ID);
+	}
+	
+	@Test
+	public void deleteShouldReturnDatabaseExceptionWhenIdIsDependent() {
+		doThrow(DataIntegrityViolationException.class).when(repository).deleteById(DEPENDENT_ID);
+		assertThrows(DatabaseException.class, () -> service.delete(DEPENDENT_ID));
+		verify(repository, times(1)).deleteById(DEPENDENT_ID);
 	}
 }
