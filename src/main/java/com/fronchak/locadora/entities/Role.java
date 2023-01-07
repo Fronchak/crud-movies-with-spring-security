@@ -20,6 +20,13 @@ public class Role implements Serializable {
 	private Long id;
 	private String authority;
 	
+	public Role() {}
+	
+	public Role(Long id, String authority) {
+		this.id = id;
+		this.authority = authority;
+	}
+	
 	public Long getId() {
 		return id;
 	}
