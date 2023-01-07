@@ -14,7 +14,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Page;
@@ -22,7 +21,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fronchak.locadora.dtos.movie.MovieInsertDTO;
@@ -38,7 +36,6 @@ import com.fronchak.locadora.util.TokenUtil;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional
 public class MovieControllerIT {
 	
 	private static final Long VALID_ID = 1L;
@@ -46,7 +43,6 @@ public class MovieControllerIT {
 	private static final MediaType MEDIA_TYPE = MediaType.APPLICATION_JSON;
 	
 	private static final String EXIST_TITLE = "Harry Potter and the Prisoner of Azkaban";
-	private static final String NON_EXIST_TITLE = "Some Title";
 	
 	private static final String CLIENT_USERNAME = "gmack@gmail.com";
 	private static final String CLIENT_PASSWORD = "123456";
@@ -186,31 +182,66 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void deleteShouldReturnNoContentWhenIdExists() throws Exception {
+	public void deleteShouldReturnNoContentWhenAdminIsLoggedAndIdExists() throws Exception {
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, ADMIN_USERNAME, ADMIN_PASSWORD);
 		ResultActions result = mockMvc.perform(delete("/movies/{id}", VALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE));
 		
 		result.andExpect(status().isNoContent());
 	}
 	
 	@Test
-	public void deleteShouldReturnNotFoundWhenIdDoesNotExist() throws Exception {
+	public void deleteShouldReturnNotFoundWhenAdminIsLoggedButIdDoesNotExist() throws Exception {
 		doThrow(ResourceNotFoundException.class).when(service).delete(INVALID_ID);
 		
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, ADMIN_USERNAME, ADMIN_PASSWORD);
 		ResultActions result = mockMvc.perform(delete("/movies/{id}", INVALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE));
 	
 		assertNotFound(result);
 	}
 	
 	@Test
-	public void saveShouldReturnUnprocessableEntityWhenTitleIsBlank() throws Exception {
+	public void saveShouldReturnUnauthorizedWhenUserIsNotLogged() throws Exception {
 		MovieInsertDTO dto = MovieMocksFactory.mockMovieInsertDTO();
-		dto.setTitle("   ");
 		
 		String body = mapper.writeValueAsString(dto);
 		
 		ResultActions result = mockMvc.perform(post("/movies")
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertUnauthorized(result);
+	}
+	
+	@Test
+	public void saveShouldReturnForbiddenWhenClientIsLogged() throws Exception {
+		MovieInsertDTO dto = MovieMocksFactory.mockMovieInsertDTO();
+		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, CLIENT_USERNAME, CLIENT_PASSWORD);
+		
+		ResultActions result = mockMvc.perform(post("/movies")
+				.header("Authorization", "Bearer " + accessToken)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertForbidden(result);
+	}
+	
+	@Test
+	public void saveShouldReturnUnprocessableEntityWhenOperatorIsLoggedAndTitleIsBlank() throws Exception {
+		MovieInsertDTO dto = MovieMocksFactory.mockMovieInsertDTO();
+		dto.setTitle("   ");
+		
+		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
+		
+		ResultActions result = mockMvc.perform(post("/movies")
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -230,13 +261,15 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void saveShouldReturnUnprocessableEntityWhenSynopsisIsBlank() throws Exception {
+	public void saveShouldReturnUnprocessableEntityWhenOperatorIsLoggedAndSynopsisIsBlank() throws Exception {
 		MovieInsertDTO dto = MovieMocksFactory.mockMovieInsertDTO();
 		dto.setSynopsis("  ");
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(post("/movies")
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -251,13 +284,15 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void saveShouldReturnUnprocessableEntityWhenDurationIsNull() throws Exception {
+	public void saveShouldReturnUnprocessableEntityWhenOperatorIsLoggedAndDurationIsNull() throws Exception {
 		MovieInsertDTO dto = MovieMocksFactory.mockMovieInsertDTO();
 		dto.setDurationInMinutes(null);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(post("/movies")
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -272,13 +307,15 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void saveShouldReturnUnprecessableEntityWhenDurationInZero() throws Exception {
+	public void saveShouldReturnUnprecessableEntityWhenOperatorIsLoggedAndDurationInZero() throws Exception {
 		MovieInsertDTO dto = MovieMocksFactory.mockMovieInsertDTO();
 		dto.setDurationInMinutes(0);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(post("/movies")
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -293,13 +330,15 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void saveShouldReturnUnprecessableEntityWhenDurationInBiggerThan240Minutes() throws Exception {
+	public void saveShouldReturnUnprecessableEntityWhenOperatorIsLoggedAndDurationInBiggerThan240Minutes() throws Exception {
 		MovieInsertDTO dto = MovieMocksFactory.mockMovieInsertDTO();
 		dto.setDurationInMinutes(241);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(post("/movies")
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -314,13 +353,15 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void saveShouldReturnUnprecessableEntityWhenNoteIsNull() throws Exception {
+	public void saveShouldReturnUnprecessableEntityWhenOperatorIsLoggedAndNoteIsNull() throws Exception {
 		MovieInsertDTO dto = MovieMocksFactory.mockMovieInsertDTO();
 		dto.setNote(null);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(post("/movies")
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -335,13 +376,15 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void saveShouldReturnUnprecessableEntityWhenNoteIsNegative() throws Exception {
+	public void saveShouldReturnUnprocessableEntityWhenOperatorIsLoggedAndNoteIsNegative() throws Exception {
 		MovieInsertDTO dto = MovieMocksFactory.mockMovieInsertDTO();
 		dto.setNote(-0.1);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(post("/movies")
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -356,13 +399,15 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void saveShouldReturnUnprecessableEntityWhenNoteIsBiggerThanFive() throws Exception {
+	public void saveShouldReturnUnprocessableEntityWhenOperatorIsLoggedAndNoteIsBiggerThanFive() throws Exception {
 		MovieInsertDTO dto = MovieMocksFactory.mockMovieInsertDTO();
 		dto.setNote(5.1);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(post("/movies")
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -377,30 +422,90 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void saveShouldReturnCreatedWhenNoValidationsAreBroken() throws Exception {
+	public void saveShouldReturnCreatedWhenOperatorIsLoggedAndNoValidationsAreBroken() throws Exception {
 		MovieInsertDTO dto = MovieMocksFactory.mockMovieInsertDTO();
 		MovieOutputDTO outputDTO = MovieMocksFactory.mockMovieOutputDTO();
 		when(service.save(any(MovieInsertDTO.class))).thenReturn(outputDTO);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(post("/movies")
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
 		
+		assertCreatedAndMovieOutputDTO(result);
+	}
+	
+	private void assertCreatedAndMovieOutputDTO(ResultActions result) throws Exception {
+		assertCreated(result);
+		assertMovieOutputDTO(result);
+	}
+	
+	private void assertCreated(ResultActions result) throws Exception {
 		result.andExpect(status().isCreated());
-		result.andExpect(jsonPath("$.id").exists());
 	}
 	
 	@Test
-	public void updateShouldReturnUnprocessableEntityWhenTitleIsBlank() throws Exception {
+	public void saveShouldReturnCreatedWhenAdminIsLoggedAndNoValidationsAreBroken() throws Exception {
+		MovieInsertDTO dto = MovieMocksFactory.mockMovieInsertDTO();
+		MovieOutputDTO outputDTO = MovieMocksFactory.mockMovieOutputDTO();
+		when(service.save(any(MovieInsertDTO.class))).thenReturn(outputDTO);
+		
+		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, ADMIN_USERNAME, ADMIN_PASSWORD);
+		
+		ResultActions result = mockMvc.perform(post("/movies")
+				.header("Authorization", "Bearer " + accessToken)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertCreatedAndMovieOutputDTO(result);
+	}
+	
+	@Test
+	public void updateShouldReturnUnauthorizedWhenUserIsNotLogged() throws Exception {
 		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
-		dto.setTitle("  ");
 		
 		String body = mapper.writeValueAsString(dto);
 		
 		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertUnauthorized(result);
+	}
+	
+	@Test
+	public void updateShouldReturnForbiddenWhenClientIsLogged() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		
+		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, CLIENT_USERNAME, CLIENT_PASSWORD);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertForbidden(result);
+	}
+	
+	@Test
+	public void updateShouldReturnUnprocessableEntityWhenOperatorIsLoggedAndTitleIsBlank() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		dto.setTitle("  ");
+		
+		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -409,13 +514,15 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void updateShouldReturnUnprocessableEntityWhenSynopsisIsBlank() throws Exception {
+	public void updateShouldReturnUnprocessableEntityWhenOperatorIsLoggedAndSynopsisIsBlank() throws Exception {
 		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
 		dto.setSynopsis("  ");
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -424,13 +531,15 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void updateShouldReturnUnprocessableEntityWhenDurationInMinutesIsNull() throws Exception {
+	public void updateShouldReturnUnprocessableEntityWhenOperatorIsLoggedAndDurationInMinutesIsNull() throws Exception {
 		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
 		dto.setDurationInMinutes(null);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -439,13 +548,15 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void updateShouldReturnUnprocessableEntityWhenDurationInMinutesIsZeroOrLower() throws Exception {
+	public void updateShouldReturnUnprocessableEntityWhenOperatorIsLoggedAndDurationInMinutesIsZeroOrLower() throws Exception {
 		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
 		dto.setDurationInMinutes(0);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -454,13 +565,15 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void updateShouldReturnUnprocessableEntityWhenDurationInMinutesIsBiggerThan240Minutes() throws Exception {
+	public void updateShouldReturnUnprocessableEntityWhenOperatorIsLoggedAndDurationInMinutesIsBiggerThan240Minutes() throws Exception {
 		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
 		dto.setDurationInMinutes(241);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -469,13 +582,15 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void updateShouldReturnUnprocessableEntityWhenNoteIsNull() throws Exception {
+	public void updateShouldReturnUnprocessableEntityWhenOperatorIsLoggedAndNoteIsNull() throws Exception {
 		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
 		dto.setNote(null);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -484,13 +599,15 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void updateShouldReturnUnprocessableEntityWhenNoteIsNegative() throws Exception {
+	public void updateShouldReturnUnprocessableEntityWhenOperatorIsLoggedAndNoteIsNegative() throws Exception {
 		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
 		dto.setNote(-0.1);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -499,13 +616,15 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void updateShouldReturnUnprocessableEntityWhenNoteIsBiggerThanFive() throws Exception {
+	public void updateShouldReturnUnprocessableEntityWhenOperatorIsLoggedAndNoteIsBiggerThanFive() throws Exception {
 		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
 		dto.setNote(5.1);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -514,31 +633,51 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void updateShouldReturnSuccessWhenNoValidationsAreBrokenAndIdExists() throws Exception {
+	public void updateShouldReturnSuccessWhenOperatorIsLoggedAndNoValidationsAreBrokenAndIdExists() throws Exception {
 		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
 		MovieOutputDTO outputDTO = MovieMocksFactory.mockMovieOutputDTO();
 		when(service.update(any(MovieUpdateDTO.class), eq(VALID_ID))).thenReturn(outputDTO);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
 		
-		result.andExpect(status().isOk());
-		result.andExpect(jsonPath("$.id").exists());
-		result.andExpect(jsonPath("$.title").exists());
+		assertSuccessAndMovieOutputDTO(result);
 	}
 	
 	@Test
-	public void updateShouldReturnNotFoundWhenNoValidationsAreBrokenButIdDoesNotExist() throws Exception {
+	public void updateShouldReturnSuccessWhenAdminIsLoggedAndNoValidationsAreBrokenAndIdExists() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		MovieOutputDTO outputDTO = MovieMocksFactory.mockMovieOutputDTO();
+		when(service.update(any(MovieUpdateDTO.class), eq(VALID_ID))).thenReturn(outputDTO);
+		
+		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, ADMIN_USERNAME, ADMIN_PASSWORD);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertSuccessAndMovieOutputDTO(result);
+	}
+	
+	@Test
+	public void updateShouldReturnNotFoundWhenOperatorIsLoggedAndNoValidationsAreBrokenButIdDoesNotExist() throws Exception {
 		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
 		when(service.update(any(MovieUpdateDTO.class), eq(INVALID_ID))).thenThrow(ResourceNotFoundException.class);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(put("/movies/{id}", INVALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -547,16 +686,18 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void saveShouldReturnUnprocessableEntityWhenThereIsAnotherMovieWithThaSameTitleAlreadySaved() throws Exception {
+	public void saveShouldReturnUnprocessableEntityWhenOperatorIsLoggedAndThereIsAnotherMovieWithThaSameTitleAlreadySaved() throws Exception {
 		MovieInsertDTO dto = MovieMocksFactory.mockMovieInsertDTO();
 		Movie entity = MovieMocksFactory.mockMovieEntity();	
 		dto.setTitle(EXIST_TITLE);
 			
 		when(repository.findByTitle(EXIST_TITLE)).thenReturn(entity);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 				
 		String body = mapper.writeValueAsString(dto);
 		
 		ResultActions result = mockMvc.perform(post("/movies")
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -571,7 +712,7 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void updateShouldReturnUnprocessableEntityWhenThereIsAnotherMovieWithTheSameNameAlreadySaved() throws Exception {
+	public void updateShouldReturnUnprocessableEntityWhenOperatorIsLoggedAndThereIsAnotherMovieWithTheSameNameAlreadySaved() throws Exception {
 		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
 		dto.setTitle(EXIST_TITLE);
 		Movie entity = MovieMocksFactory.mockMovieEntity();
@@ -579,8 +720,10 @@ public class MovieControllerIT {
 		when(repository.findByTitle(EXIST_TITLE)).thenReturn(entity);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
@@ -589,7 +732,7 @@ public class MovieControllerIT {
 	}
 	
 	@Test
-	public void updateShouldReturnSuccessWhenThereIsAnotherMovieWithTheSameTitleButIsTheEntityBeenUpdated() throws Exception {
+	public void updateShouldReturnSuccessWhenOperatorIsLoggedAndExistAnotherMovieWithTheSameTitleButIsTheEntityBeenUpdated() throws Exception {
 		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
 		dto.setTitle(EXIST_TITLE);
 		Movie entity = MovieMocksFactory.mockMovieEntity();
@@ -600,14 +743,37 @@ public class MovieControllerIT {
 		when(service.update(any(MovieUpdateDTO.class), eq(VALID_ID))).thenReturn(outputDTO);
 		
 		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, OPERATOR_USERNAME, OPERATOR_PASSWORD);
 		
 		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE)
 				.content(body)
 				.contentType(MEDIA_TYPE));
 		
-		result.andExpect(status().isOk());
-		result.andExpect(jsonPath("$.id").exists());
-		result.andExpect(jsonPath("$.title").exists());
+		assertSuccessAndMovieOutputDTO(result);
+	}
+	
+	@Test
+	public void updateShouldReturnSuccessWhenAdminIsLoggedAndExistAnotherMovieWithTheSameTitleButIsTheEntityBeenUpdated() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		dto.setTitle(EXIST_TITLE);
+		Movie entity = MovieMocksFactory.mockMovieEntity();
+		entity.setId(VALID_ID);
+		MovieOutputDTO outputDTO = MovieMocksFactory.mockMovieOutputDTO();
+		
+		when(repository.findByTitle(EXIST_TITLE)).thenReturn(entity);
+		when(service.update(any(MovieUpdateDTO.class), eq(VALID_ID))).thenReturn(outputDTO);
+		
+		String body = mapper.writeValueAsString(dto);
+		String accessToken = tokenUtil.obtainAccessToken(mockMvc, ADMIN_USERNAME, ADMIN_PASSWORD);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.header("Authorization", "Bearer " + accessToken)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertSuccessAndMovieOutputDTO(result);
 	}
 }
