@@ -4,10 +4,13 @@ INSERT INTO movie (title, synopsis, duration_in_minutes, note) VALUES ('Harry Po
 
 INSERT INTO tb_user (email, password) VALUES ('gabriel@gmail.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG');
 INSERT INTO tb_user (email, password) VALUES ('fronchak@gmail.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG');
+INSERT INTO tb_user (email, password) VALUES ('gmack@gmail.com', '$2a$10$eACCYoNOHEqXve8aIWT8Nu3PkMXWBaOxJ9aORUYzfMQCbVBIhZ8tG');
 
 INSERT INTO role (authority) VALUES ('ROLE_OPERATOR');
 INSERT INTO role (authority) VALUES ('ROLE_ADMIN');
+INSERT INTO role (authority) VALUES ('ROLE_CLIENT');
 
 INSERT INTO user_role (id_user, id_role) VALUES (1, 1);
 INSERT INTO user_role (id_user, id_role) VALUES (2, 1);
 INSERT INTO user_role (id_user, id_role) VALUES (2, 2);
+INSERT INTO user_role (id_user, id_role) VALUES (3, 3);

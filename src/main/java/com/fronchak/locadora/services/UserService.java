@@ -5,6 +5,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.fronchak.locadora.entities.User;
 import com.fronchak.locadora.repositories.UserRepository;
@@ -15,6 +16,7 @@ public class UserService implements UserDetailsService {
 	@Autowired
 	private UserRepository repository;
 
+	@Transactional(readOnly = true)
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		User entity = repository.findByEmail(username);
