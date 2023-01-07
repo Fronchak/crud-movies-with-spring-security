@@ -1,11 +1,13 @@
 package com.fronchak.locadora.controllers;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -23,8 +25,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fronchak.locadora.dtos.movie.MovieInsertDTO;
 import com.fronchak.locadora.dtos.movie.MovieOutputAllDTO;
 import com.fronchak.locadora.dtos.movie.MovieOutputDTO;
+import com.fronchak.locadora.dtos.movie.MovieUpdateDTO;
+import com.fronchak.locadora.entities.Movie;
 import com.fronchak.locadora.exceptions.ResourceNotFoundException;
 import com.fronchak.locadora.mocks.MovieMocksFactory;
+import com.fronchak.locadora.repositories.MovieRepository;
 import com.fronchak.locadora.services.MovieService;
 
 @WebMvcTest(MovieController.class)
@@ -33,6 +38,9 @@ public class MovieControllerTest {
 	private static final Long VALID_ID = 1L;
 	private static final Long INVALID_ID = 10000L;
 	private static final MediaType MEDIA_TYPE = MediaType.APPLICATION_JSON;
+	
+	private static final String EXIST_TITLE = "Harry Potter and the Prisoner of Azkaban";
+	private static final String NON_EXIST_TITLE = "Some Title";
 
 	@Autowired
 	private ObjectMapper mapper;
@@ -42,6 +50,9 @@ public class MovieControllerTest {
 	
 	@MockBean
 	private MovieService service;
+	
+	@MockBean
+	private MovieRepository repository;
 	
 	@Test
 	public void findByIdShouldReturnSuccessWhenIdExists() throws Exception {
@@ -61,6 +72,10 @@ public class MovieControllerTest {
 		ResultActions result = mockMvc.perform(get("/movies/{id}", INVALID_ID)
 				.accept(MEDIA_TYPE));
 		
+		assertNotFound(result);
+	}
+	
+	private void assertNotFound(ResultActions result) throws Exception {
 		result.andExpect(status().isNotFound());
 		result.andExpect(jsonPath("$.error").value("Entity not found"));
 	}
@@ -93,8 +108,7 @@ public class MovieControllerTest {
 		ResultActions result = mockMvc.perform(delete("/movies/{id}", INVALID_ID)
 				.accept(MEDIA_TYPE));
 	
-		result.andExpect(status().isNotFound());
-		result.andExpect(jsonPath("$.error").value("Entity not found"));
+		assertNotFound(result);
 	}
 	
 	@Test
@@ -285,5 +299,223 @@ public class MovieControllerTest {
 		
 		result.andExpect(status().isCreated());
 		result.andExpect(jsonPath("$.id").exists());
+	}
+	
+	@Test
+	public void updateShouldReturnUnprocessableEntityWhenTitleIsBlank() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		dto.setTitle("  ");
+		
+		String body = mapper.writeValueAsString(dto);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertInvalidBlankTitle(result);
+	}
+	
+	@Test
+	public void updateShouldReturnUnprocessableEntityWhenSynopsisIsBlank() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		dto.setSynopsis("  ");
+		
+		String body = mapper.writeValueAsString(dto);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertInvalidBlankSynopsis(result);
+	}
+	
+	@Test
+	public void updateShouldReturnUnprocessableEntityWhenDurationInMinutesIsNull() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		dto.setDurationInMinutes(null);
+		
+		String body = mapper.writeValueAsString(dto);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertInvalidNullDurationInMinutes(result);
+	}
+	
+	@Test
+	public void updateShouldReturnUnprocessableEntityWhenDurationInMinutesIsZeroOrLower() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		dto.setDurationInMinutes(0);
+		
+		String body = mapper.writeValueAsString(dto);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertInvalidZeroDurationInMinutes(result);
+	}
+	
+	@Test
+	public void updateShouldReturnUnprocessableEntityWhenDurationInMinutesIsBiggerThan240Minutes() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		dto.setDurationInMinutes(241);
+		
+		String body = mapper.writeValueAsString(dto);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertInvalidMoreThan240DurationInMinutes(result);
+	}
+	
+	@Test
+	public void updateShouldReturnUnprocessableEntityWhenNoteIsNull() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		dto.setNote(null);
+		
+		String body = mapper.writeValueAsString(dto);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertInvalidNullNote(result);
+	}
+	
+	@Test
+	public void updateShouldReturnUnprocessableEntityWhenNoteIsNegative() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		dto.setNote(-0.1);
+		
+		String body = mapper.writeValueAsString(dto);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertInvalidNegativeNote(result);
+	}
+	
+	@Test
+	public void updateShouldReturnUnprocessableEntityWhenNoteIsBiggerThanFive() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		dto.setNote(5.1);
+		
+		String body = mapper.writeValueAsString(dto);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertInvalidMoreThanFiveNote(result);
+	}
+	
+	@Test
+	public void updateShouldReturnSuccessWhenNoValidationsAreBrokenAndIdExists() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		MovieOutputDTO outputDTO = MovieMocksFactory.mockMovieOutputDTO();
+		when(service.update(any(MovieUpdateDTO.class), eq(VALID_ID))).thenReturn(outputDTO);
+		
+		String body = mapper.writeValueAsString(dto);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		result.andExpect(status().isOk());
+		result.andExpect(jsonPath("$.id").exists());
+		result.andExpect(jsonPath("$.title").exists());
+	}
+	
+	@Test
+	public void updateShouldReturnNotFoundWhenNoValidationsAreBrokenButIdDoesNotExist() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		when(service.update(any(MovieUpdateDTO.class), eq(INVALID_ID))).thenThrow(ResourceNotFoundException.class);
+		
+		String body = mapper.writeValueAsString(dto);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", INVALID_ID)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertNotFound(result);
+	}
+	
+	@Test
+	public void saveShouldReturnUnprocessableEntityWhenThereIsAnotherMovieWithThaSameTitleAlreadySaved() throws Exception {
+		MovieInsertDTO dto = MovieMocksFactory.mockMovieInsertDTO();
+		Movie entity = MovieMocksFactory.mockMovieEntity();	
+		dto.setTitle(EXIST_TITLE);
+			
+		when(repository.findByTitle(EXIST_TITLE)).thenReturn(entity);
+				
+		String body = mapper.writeValueAsString(dto);
+		
+		ResultActions result = mockMvc.perform(post("/movies")
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertInvalidDuplicateTitle(result);
+	}
+
+	private void assertInvalidDuplicateTitle(ResultActions result) throws Exception {
+		assertUnprocessableEntity(result);
+		result.andExpect(jsonPath("$.errors[0].fieldName").value("title"));
+		result.andExpect(jsonPath("$.errors[0].message").value("There is another movie with the same title already saved"));
+	}
+	
+	@Test
+	public void updateShouldReturnUnprocessableEntityWhenThereIsAnotherMovieWithTheSameNameAlreadySaved() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		dto.setTitle(EXIST_TITLE);
+		Movie entity = MovieMocksFactory.mockMovieEntity();
+		
+		when(repository.findByTitle(EXIST_TITLE)).thenReturn(entity);
+		
+		String body = mapper.writeValueAsString(dto);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		assertInvalidDuplicateTitle(result);
+	}
+	
+	@Test
+	public void updateShouldReturnSuccessWhenThereIsAnotherMovieWithTheSameTitleButIsTheEntityBeenUpdated() throws Exception {
+		MovieUpdateDTO dto = MovieMocksFactory.mockMovieUpdateDTO();
+		dto.setTitle(EXIST_TITLE);
+		Movie entity = MovieMocksFactory.mockMovieEntity();
+		entity.setId(VALID_ID);
+		MovieOutputDTO outputDTO = MovieMocksFactory.mockMovieOutputDTO();
+		
+		when(repository.findByTitle(EXIST_TITLE)).thenReturn(entity);
+		when(service.update(any(MovieUpdateDTO.class), eq(VALID_ID))).thenReturn(outputDTO);
+		
+		String body = mapper.writeValueAsString(dto);
+		
+		ResultActions result = mockMvc.perform(put("/movies/{id}", VALID_ID)
+				.accept(MEDIA_TYPE)
+				.content(body)
+				.contentType(MEDIA_TYPE));
+		
+		result.andExpect(status().isOk());
+		result.andExpect(jsonPath("$.id").exists());
+		result.andExpect(jsonPath("$.title").exists());
 	}
 }

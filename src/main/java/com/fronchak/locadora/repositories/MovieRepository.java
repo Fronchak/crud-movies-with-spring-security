@@ -6,4 +6,7 @@ import org.springframework.stereotype.Repository;
 import com.fronchak.locadora.entities.Movie;
 
 @Repository
-public interface MovieRepository extends JpaRepository<Movie, Long> {}
+public interface MovieRepository extends JpaRepository<Movie, Long> {
+	
+	Movie findByTitle(String title);
+}

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -20,6 +21,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import com.fronchak.locadora.dtos.movie.MovieInsertDTO;
 import com.fronchak.locadora.dtos.movie.MovieOutputAllDTO;
 import com.fronchak.locadora.dtos.movie.MovieOutputDTO;
+import com.fronchak.locadora.dtos.movie.MovieUpdateDTO;
 import com.fronchak.locadora.services.MovieService;
 
 @RestController
@@ -53,5 +55,11 @@ public class MovieController {
 		URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}")
 				.buildAndExpand(outputDTO.getId()).toUri();
 		return ResponseEntity.created(uri).body(outputDTO);
+	}
+	
+	@PutMapping(value = "/{id}")
+	public ResponseEntity<MovieOutputDTO> update(@Valid @RequestBody MovieUpdateDTO updateDTO, @PathVariable Long id) {
+		MovieOutputDTO outputDTO = service.update(updateDTO, id);
+		return ResponseEntity.ok().body(outputDTO);
 	}
 }
