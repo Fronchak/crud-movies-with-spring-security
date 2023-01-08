@@ -59,7 +59,13 @@ public class UserMocksFactory {
 	}
 	
 	public static UserUpdateDTO mockUserUpdateDTO(int i) {
-		return (UserUpdateDTO) mockUserInputDTO(new UserUpdateDTO(), i);
+		UserUpdateDTO mock = (UserUpdateDTO) mockUserInputDTO(new UserUpdateDTO(), i);
+		mock.setOldPassword(mockOldPassword(i));
+		return mock;
+	}
+	
+	private static String mockOldPassword(int i) {
+		return "RawOld123456-" + i;
 	}
 	
 	public static UserOutputDTO mockUserOutputDTO() {

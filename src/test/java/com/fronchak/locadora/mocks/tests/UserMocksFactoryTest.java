@@ -74,6 +74,7 @@ public class UserMocksFactoryTest {
 		RoleInputDTO role2 = RoleMocksFactory.mockRoleInputDTO(1);
 		assertEquals("mock_email_0@gmail.com.br", result.getEmail());
 		assertEquals("Raw123456-0", result.getPassword());
+		assertEquals("RawOld123456-0", result.getOldPassword());
 		assertTrue(result.getRoles().contains(role1));
 		assertTrue(result.getRoles().contains(role2));
 	}
@@ -85,6 +86,7 @@ public class UserMocksFactoryTest {
 		RoleInputDTO role2 = RoleMocksFactory.mockRoleInputDTO(2);
 		assertEquals("mock_email_1@gmail.com.br", result.getEmail());
 		assertEquals("Raw123456-1", result.getPassword());
+		assertEquals("RawOld123456-1", result.getOldPassword());
 		assertTrue(result.getRoles().contains(role1));
 		assertTrue(result.getRoles().contains(role2));
 	}
