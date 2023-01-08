@@ -1,5 +1,7 @@
 package com.fronchak.locadora.services;
 
+import javax.persistence.EntityNotFoundException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -12,8 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fronchak.locadora.dtos.user.UserInputDTO;
 import com.fronchak.locadora.dtos.user.UserInsertDTO;
 import com.fronchak.locadora.dtos.user.UserOutputDTO;
+import com.fronchak.locadora.dtos.user.UserUpdateDTO;
 import com.fronchak.locadora.entities.User;
 import com.fronchak.locadora.exceptions.DatabaseException;
+import com.fronchak.locadora.exceptions.InvalidPasswordException;
 import com.fronchak.locadora.exceptions.ResourceNotFoundException;
 import com.fronchak.locadora.mappers.UserMapper;
 import com.fronchak.locadora.repositories.RoleRepository;
@@ -56,9 +60,29 @@ public class UserService implements UserDetailsService {
 	
 	private void copyDTOToEntity(UserInputDTO dto, User entity) {
 		mapper.copyDTOToEntity(dto, entity);
-		entity.setPassword(passwordEncoder.encode(dto.getPassword()));
 		entity.getRoles().clear();
 		dto.getRoles().forEach(role -> entity.addRole(roleRepository.getReferenceById(role.getId())));
+		entity.setPassword(passwordEncoder.encode(dto.getPassword()));
+	}
+	
+	@Transactional
+	public UserOutputDTO update(UserUpdateDTO updateDTO, Long id) {
+		try {
+			User entity = repository.getReferenceById(id);
+			if(!passwordEncoder.matches(updateDTO.getOldPassword(), entity.getPassword())) {
+				throw new InvalidPasswordException("Invalid password, please try again");
+			}
+			copyDTOToEntity(updateDTO, entity);
+			entity = repository.save(entity);
+			return mapper.convertEntityToOutputDTO(entity);
+		}
+		catch(EntityNotFoundException e) {
+			throw new ResourceNotFoundException("User", id.toString());
+		}
+		catch(DataIntegrityViolationException e) {
+			throw new DatabaseException("Invalid role ID");
+		}
+
 	}
 
 	@Override

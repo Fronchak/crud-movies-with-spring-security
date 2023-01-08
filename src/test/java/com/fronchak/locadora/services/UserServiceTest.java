@@ -11,6 +11,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.Optional;
 
+import javax.persistence.EntityNotFoundException;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -23,9 +25,11 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import com.fronchak.locadora.dtos.user.UserInsertDTO;
 import com.fronchak.locadora.dtos.user.UserOutputDTO;
+import com.fronchak.locadora.dtos.user.UserUpdateDTO;
 import com.fronchak.locadora.entities.Role;
 import com.fronchak.locadora.entities.User;
 import com.fronchak.locadora.exceptions.DatabaseException;
+import com.fronchak.locadora.exceptions.InvalidPasswordException;
 import com.fronchak.locadora.exceptions.ResourceNotFoundException;
 import com.fronchak.locadora.mappers.UserMapper;
 import com.fronchak.locadora.mocks.RoleMocksFactory;
@@ -138,5 +142,87 @@ public class UserServiceTest {
 		
 		assertThrows(DatabaseException.class, () -> service.save(insertDTO));
 		verify(repository, never()).save(any());
+		verify(roleRepository, times(1)).getReferenceById(20L);
+	}
+	
+	@Test
+	public void updateShouldThrowInvalidPasswordExceptionWhenPasswordIsInvalid() {
+		UserUpdateDTO updateDTO = UserMocksFactory.mockUserUpdateDTO();
+		User entity = UserMocksFactory.mockUserEntity();
+		
+		when(repository.getReferenceById(EXISTING_ID)).thenReturn(entity);
+		when(passwordEncoder.matches(updateDTO.getOldPassword(), entity.getPassword())).thenReturn(false);
+		
+		assertThrows(InvalidPasswordException.class, () -> service.update(updateDTO, EXISTING_ID));
+		verify(repository, never()).save(any());
+		verify(repository, times(1)).getReferenceById(EXISTING_ID);
+		verify(passwordEncoder, times(1)).matches(updateDTO.getOldPassword(), entity.getPassword());
+	}
+	
+	@Test
+	public void updateShouldThrowResourceNotFoundExceptionWhenIdDoesNotExist() {
+		UserUpdateDTO updateDTO = UserMocksFactory.mockUserUpdateDTO();
+		
+		when(repository.getReferenceById(NON_EXISTING_ID)).thenThrow(EntityNotFoundException.class);
+		
+		assertThrows(ResourceNotFoundException.class, () -> service.update(updateDTO, NON_EXISTING_ID));
+		verify(repository, never()).save(any());
+		verify(repository, times(1)).getReferenceById(NON_EXISTING_ID);
+	}
+	
+	@Test
+	public void updateShouldThrowDatabaseExceptionWhenRoleIdDoesNotExist() {
+		UserUpdateDTO updateDTO = UserMocksFactory.mockUserUpdateDTO();
+		User entity = UserMocksFactory.mockUserEntity();
+		
+		when(repository.getReferenceById(EXISTING_ID)).thenReturn(entity);
+		when(roleRepository.getReferenceById(20L)).thenThrow(DataIntegrityViolationException.class);
+		when(passwordEncoder.matches(updateDTO.getOldPassword(), entity.getPassword())).thenReturn(true);
+		
+		assertThrows(DatabaseException.class, () -> service.update(updateDTO, EXISTING_ID));
+		verify(repository, times(1)).getReferenceById(EXISTING_ID);
+		verify(roleRepository, times(1)).getReferenceById(20L);
+		verify(repository, never()).save(any());
+		verify(passwordEncoder, times(1)).matches(updateDTO.getOldPassword(), entity.getPassword());
+	}
+	
+	@Test
+	public void updateShouldReturnOutputDTOWhenPasswordsMatch() {
+		UserUpdateDTO updateDTO = UserMocksFactory.mockUserUpdateDTO();
+		UserOutputDTO outputDTO = UserMocksFactory.mockUserOutputDTO();
+		User newEntity = UserMocksFactory.mockUserEntity(0);
+		User oldEntity = UserMocksFactory.mockUserEntity(1);
+		Role role1 = RoleMocksFactory.mockRoleEntity(0);
+		Role role2 = RoleMocksFactory.mockRoleEntity(1);
+		ArgumentCaptor<User> argumentCaptor = ArgumentCaptor.forClass(User.class);
+		String oldPassword = oldEntity.getPassword();
+		String newPassword = "newPassword";
+		
+		when(repository.getReferenceById(EXISTING_ID)).thenReturn(oldEntity);
+		when(passwordEncoder.matches(updateDTO.getOldPassword(), oldEntity.getPassword())).thenReturn(true);
+		when(passwordEncoder.encode(updateDTO.getPassword())).thenReturn(newPassword);
+		when(roleRepository.getReferenceById(20L)).thenReturn(role1);
+		when(roleRepository.getReferenceById(21L)).thenReturn(role2);
+		when(repository.save(oldEntity)).thenReturn(newEntity);
+		when(mapper.convertEntityToOutputDTO(newEntity)).thenReturn(outputDTO);
+		
+		UserOutputDTO result = service.update(updateDTO, EXISTING_ID);
+		verify(repository).save(argumentCaptor.capture());
+		User userResult = argumentCaptor.getValue();
+		
+		verify(repository, times(1)).getReferenceById(EXISTING_ID);
+		verify(passwordEncoder, times(1)).matches(updateDTO.getOldPassword(), oldPassword);
+		verify(passwordEncoder, times(1)).encode(updateDTO.getPassword());
+		verify(roleRepository, times(1)).getReferenceById(20L);
+		verify(roleRepository, times(1)).getReferenceById(21L);
+		verify(repository, times(1)).save(oldEntity);
+		verify(mapper, times(1)).convertEntityToOutputDTO(newEntity);
+		verify(mapper, times(1)).copyDTOToEntity(updateDTO, oldEntity);
+		
+		assertEquals(newPassword, userResult.getPassword());
+		assertTrue(userResult.getRoles().contains(role1));
+		assertTrue(userResult.getRoles().contains(role1));
+		assertEquals(2, userResult.getRoles().size());
+		CustomizeAsserts.assertUserOutputDTO(result);
 	}
 }
