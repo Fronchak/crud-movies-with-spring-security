@@ -4,6 +4,7 @@ import javax.persistence.EntityNotFoundException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -69,7 +70,7 @@ public class UserService implements UserDetailsService {
 	public UserOutputDTO update(UserUpdateDTO updateDTO, Long id) {
 		try {
 			User entity = repository.getReferenceById(id);
-			if(!passwordEncoder.matches(updateDTO.getOldPassword(), entity.getPassword())) {
+			if(isPasswordInvalid(updateDTO, entity)) {
 				throw new InvalidPasswordException("Invalid password, please try again");
 			}
 			copyDTOToEntity(updateDTO, entity);
@@ -82,7 +83,26 @@ public class UserService implements UserDetailsService {
 		catch(DataIntegrityViolationException e) {
 			throw new DatabaseException("Invalid role ID");
 		}
-
+	}
+	
+	private boolean isPasswordInvalid(UserUpdateDTO updateDTO, User entity) {
+		return !isPasswordValid(updateDTO, entity);
+	}
+	
+	private boolean isPasswordValid(UserUpdateDTO updateDTO, User entity) {
+		return passwordEncoder.matches(updateDTO.getOldPassword(), entity.getPassword());
+	}
+	
+	public void delete(Long id) {
+		try {
+			repository.deleteById(id);			
+		}
+		catch(EmptyResultDataAccessException e) {
+			throw new ResourceNotFoundException("User", id.toString());
+		}
+		catch(DataIntegrityViolationException e) {
+			throw new DatabaseException("User cannot be deleted");
+		}
 	}
 
 	@Override

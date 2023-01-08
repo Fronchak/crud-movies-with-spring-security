@@ -1,9 +1,12 @@
 package com.fronchak.locadora.services;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -19,6 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -46,6 +50,7 @@ public class UserServiceTest {
 	
 	private static final Long EXISTING_ID = 1L;
 	private static final Long NON_EXISTING_ID = 2L;
+	private static final Long DEPENDENT_ID = 3L;
 	
 	@Mock
 	private UserRepository repository;
@@ -224,5 +229,29 @@ public class UserServiceTest {
 		assertTrue(userResult.getRoles().contains(role1));
 		assertEquals(2, userResult.getRoles().size());
 		CustomizeAsserts.assertUserOutputDTO(result);
+	}
+	
+	@Test
+	public void deleteShouldNotThrowAnyExceptionWhenIdIsValid() {
+		doNothing().when(repository).deleteById(EXISTING_ID);
+		
+		assertDoesNotThrow(() -> service.delete(EXISTING_ID));
+		verify(repository, times(1)).deleteById(EXISTING_ID);
+	}
+	
+	@Test
+	public void deleteShouldThrowResourceNotFoundExceptionWhenIdDoesNotExist() {
+		doThrow(EmptyResultDataAccessException.class).when(repository).deleteById(NON_EXISTING_ID);
+		
+		assertThrows(ResourceNotFoundException.class, () -> service.delete(NON_EXISTING_ID));
+		verify(repository, times(1)).deleteById(NON_EXISTING_ID);
+	}
+	
+	@Test
+	public void deleteShouldThrowDatabaseExceptionWhenEntityCannotBeDeleted() {
+		doThrow(DataIntegrityViolationException.class).when(repository).deleteById(DEPENDENT_ID);
+		
+		assertThrows(DatabaseException.class, () -> service.delete(DEPENDENT_ID));
+		verify(repository, times(1)).deleteById(DEPENDENT_ID);
 	}
 }
