@@ -1,11 +1,13 @@
 package com.fronchak.locadora.controllers.movie;
 
+import static com.fronchak.locadora.util.CustomizeControllerAsserts.assertForbidden;
+import static com.fronchak.locadora.util.CustomizeControllerAsserts.assertNotFound;
+import static com.fronchak.locadora.util.CustomizeControllerAsserts.assertUnauthorized;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Page;
@@ -16,6 +18,7 @@ import com.fronchak.locadora.dtos.movie.MovieOutputAllDTO;
 import com.fronchak.locadora.dtos.movie.MovieOutputDTO;
 import com.fronchak.locadora.exceptions.ResourceNotFoundException;
 import com.fronchak.locadora.mocks.MovieMocksFactory;
+import com.fronchak.locadora.util.CustomizeControllerAsserts;
 
 public class MovieControllerTest extends AbstractMovieControllerTest {
 
@@ -109,7 +112,7 @@ public class MovieControllerTest extends AbstractMovieControllerTest {
 				.header("Authorization", "Bearer " + accessToken)
 				.accept(MEDIA_TYPE));
 		
-		result.andExpect(status().isNoContent());
+		CustomizeControllerAsserts.assertNoContent(result);
 	}
 	
 	@Test

@@ -1,5 +1,8 @@
 package com.fronchak.locadora.controllers.movie;
 
+import static com.fronchak.locadora.util.CustomizeControllerAsserts.assertForbidden;
+import static com.fronchak.locadora.util.CustomizeControllerAsserts.assertNotFound;
+import static com.fronchak.locadora.util.CustomizeControllerAsserts.assertUnauthorized;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;

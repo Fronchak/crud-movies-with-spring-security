@@ -1,7 +1,9 @@
 package com.fronchak.locadora.controllers.movie;
 
+import static com.fronchak.locadora.util.CustomizeControllerAsserts.assertCreated;
+import static com.fronchak.locadora.util.CustomizeControllerAsserts.assertSuccess;
+import static com.fronchak.locadora.util.CustomizeControllerAsserts.assertUnprocessableEntity;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -26,12 +28,12 @@ public abstract class AbstractMovieControllerTest {
 	
 	protected static final String EXIST_TITLE = "Harry Potter and the Prisoner of Azkaban";
 	
-	protected static final String CLIENT_USERNAME = "gmack@gmail.com";
-	protected static final String CLIENT_PASSWORD = "123456";
-	protected static final String OPERATOR_USERNAME = "gabriel@gmail.com";
-	protected static final String OPERATOR_PASSWORD = "123456";
-	protected static final String ADMIN_USERNAME = "fronchak@gmail.com";
-	protected static final String ADMIN_PASSWORD = "123456";
+	private static final String CLIENT_USERNAME = "gmack@gmail.com";
+	private static final String CLIENT_PASSWORD = "123456";
+	private static final String OPERATOR_USERNAME = "gabriel@gmail.com";
+	private static final String OPERATOR_PASSWORD = "123456";
+	private static final String ADMIN_USERNAME = "fronchak@gmail.com";
+	private static final String ADMIN_PASSWORD = "123456";
 	
 	protected String accessToken;
 	
@@ -62,20 +64,11 @@ public abstract class AbstractMovieControllerTest {
 		accessToken = tokenUtil.obtainAccessToken(mockMvc, ADMIN_USERNAME, ADMIN_PASSWORD);
 	}
 
-	protected void assertUnauthorized(ResultActions result) throws Exception {
-		result.andExpect(status().isUnauthorized());
-		result.andExpect(jsonPath("$.error").value("unauthorized"));
-	}
-
 	protected void assertSuccessAndMovieOutputDTO(ResultActions result) throws Exception {
 		assertSuccess(result);
 		assertMovieOutputDTO(result);
 	}
-	
-	protected void assertSuccess(ResultActions result) throws Exception {
-		result.andExpect(status().isOk());
-	}
-	
+
 	protected void assertMovieOutputDTO(ResultActions result) throws Exception {
 		result.andExpect(jsonPath("$.id").value(10L));
 		result.andExpect(jsonPath("$.title").value("Mock movie title 0"));
@@ -89,21 +82,6 @@ public abstract class AbstractMovieControllerTest {
 		result.andExpect(jsonPath("$.content[1].title").value("Mock movie title 1"));
 	}
 
-	protected void assertNotFound(ResultActions result) throws Exception {
-		result.andExpect(status().isNotFound());
-		result.andExpect(jsonPath("$.error").value("Entity not found"));
-	}
-
-	protected void assertForbidden(ResultActions result) throws Exception {
-		result.andExpect(status().isForbidden());
-		result.andExpect(jsonPath("$.error").value("access_denied"));
-	}
-
-	protected void assertUnprocessableEntity(ResultActions result) throws Exception {
-		result.andExpect(status().isUnprocessableEntity());
-		result.andExpect(jsonPath("$.error").value("Validation error"));
-	}
-	
 	protected void assertInvalidBlankTitle(ResultActions result) throws Exception {
 		assertUnprocessableEntity(result);
 		result.andExpect(jsonPath("$.errors[0].fieldName").value("title"));
@@ -155,10 +133,6 @@ public abstract class AbstractMovieControllerTest {
 	protected void assertCreatedAndMovieOutputDTO(ResultActions result) throws Exception {
 		assertCreated(result);
 		assertMovieOutputDTO(result);
-	}
-	
-	protected void assertCreated(ResultActions result) throws Exception {
-		result.andExpect(status().isCreated());
 	}
 	
 	protected void assertInvalidDuplicateTitle(ResultActions result) throws Exception {

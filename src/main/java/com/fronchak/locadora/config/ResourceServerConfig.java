@@ -26,6 +26,8 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
 	
 	private static final String[] AT_LEAST_CLIENT = { "/movies/**" };
 	
+	private static final String[] OPERATOR_OR_ADMIN = { "/users/**" };
+ 	
 	@Override
 	public void configure(ResourceServerSecurityConfigurer resources) throws Exception {
 		resources.tokenStore(tokenStore);
@@ -43,6 +45,9 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
 			.antMatchers(HttpMethod.GET, AT_LEAST_CLIENT).hasAnyRole("CLIENT", "OPERATOR", "ADMIN")
 			.antMatchers(HttpMethod.POST, AT_LEAST_CLIENT).hasAnyRole("OPERATOR", "ADMIN")
 			.antMatchers(HttpMethod.PUT, AT_LEAST_CLIENT).hasAnyRole("OPERATOR", "ADMIN")
+			.antMatchers(HttpMethod.GET, OPERATOR_OR_ADMIN).hasAnyRole("OPERATOR", "ADMIN")
+			.antMatchers(HttpMethod.POST, OPERATOR_OR_ADMIN).hasAnyRole("OPERATOR", "ADMIN")
+			.antMatchers(HttpMethod.DELETE, OPERATOR_OR_ADMIN).hasRole("ADMIN")
 			.antMatchers(HttpMethod.DELETE, AT_LEAST_CLIENT).hasRole("ADMIN")
 			.anyRequest().authenticated();
 	}

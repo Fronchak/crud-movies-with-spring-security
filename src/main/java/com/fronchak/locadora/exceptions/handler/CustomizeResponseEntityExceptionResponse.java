@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
+import com.fronchak.locadora.exceptions.DatabaseException;
 import com.fronchak.locadora.exceptions.ExceptionResponse;
 import com.fronchak.locadora.exceptions.ResourceNotFoundException;
 import com.fronchak.locadora.exceptions.ValidationExceptionResponse;
@@ -33,6 +34,13 @@ public class CustomizeResponseEntityExceptionResponse {
 		response.setMessage(e.getMessage());
 		response.setPath(request.getDescription(false));
 		return response;
+	}
+	
+	@ExceptionHandler(DatabaseException.class)
+	public ResponseEntity<ExceptionResponse> handleDatabaseException(DatabaseException e, WebRequest request) {
+		HttpStatus status = HttpStatus.BAD_REQUEST;
+		ExceptionResponse response = makeResponse(new ExceptionResponse(), e, request, status, DatabaseException.getError());
+		return ResponseEntity.status(status).body(response);
 	}
 	
 	@ExceptionHandler(MethodArgumentNotValidException.class)
