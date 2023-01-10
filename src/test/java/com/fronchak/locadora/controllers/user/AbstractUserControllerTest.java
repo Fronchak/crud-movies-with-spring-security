@@ -5,7 +5,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -89,7 +88,13 @@ public abstract class AbstractUserControllerTest {
 	protected void assertInvalidNullPassword(ResultActions result) throws Exception {
 		CustomizeControllerAsserts.assertUnprocessableEntity(result);
 		result.andExpect(jsonPath("$.errors[0].fieldName").value("password"));
-		result.andExpect(jsonPath("$.errors[0].message").value("User's password must be specified"));
+		result.andExpect(jsonPath("$.errors[0].message").value("User's password cannot be empty"));
+	}
+	
+	protected void assertInvalidEmptyPassword(ResultActions result) throws Exception {
+		CustomizeControllerAsserts.assertUnprocessableEntity(result);
+		result.andExpect(jsonPath("$.errors[0].fieldName").value("password"));
+		result.andExpect(jsonPath("$.errors[0].message").value("User's password cannot be empty"));
 	}
 	
 	protected void assertInvalidLessThan6LettersPassword(ResultActions result) throws Exception {
@@ -98,10 +103,28 @@ public abstract class AbstractUserControllerTest {
 		result.andExpect(jsonPath("$.errors[0].message").value("User's password must have at least 6 letters"));
 	}
 	
+	protected void assertInvalidNullOldPassword(ResultActions result) throws Exception {
+		CustomizeControllerAsserts.assertUnprocessableEntity(result);
+		result.andExpect(jsonPath("$.errors[0].fieldName").value("oldPassword"));
+		result.andExpect(jsonPath("$.errors[0].message").value("User's old password cannot be empty"));
+	}
+	
+	protected void assertInvalidEmptyOldPassword(ResultActions result) throws Exception {
+		CustomizeControllerAsserts.assertUnprocessableEntity(result);
+		result.andExpect(jsonPath("$.errors[0].fieldName").value("oldPassword"));
+		result.andExpect(jsonPath("$.errors[0].message").value("User's old password cannot be empty"));
+	}
+	
+	protected void assertInvalidLessThan6LettersOldPassword(ResultActions result) throws Exception {
+		CustomizeControllerAsserts.assertUnprocessableEntity(result);
+		result.andExpect(jsonPath("$.errors[0].fieldName").value("oldPassword"));
+		result.andExpect(jsonPath("$.errors[0].message").value("User's old password must have at least 6 letters"));
+	}
+	
 	protected void assertInvalidNullRoles(ResultActions result) throws Exception {
 		CustomizeControllerAsserts.assertUnprocessableEntity(result);
 		result.andExpect(jsonPath("$.errors[0].fieldName").value("roles"));
-		result.andExpect(jsonPath("$.errors[0].message").value("User's roles must be specified"));
+		result.andExpect(jsonPath("$.errors[0].message").value("User's roles cannot be empty, must have at least one role"));
 	}
 	
 	protected void assertInvalidEmptyRoles(ResultActions result) throws Exception {

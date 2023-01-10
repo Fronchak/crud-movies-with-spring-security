@@ -151,6 +151,17 @@ public class UserServiceTest {
 	}
 	
 	@Test
+	public void saveShouldThrowEntityNotFoundExceptionWhenRoleIdDoesNotExist() {
+		UserInsertDTO insertDTO = UserMocksFactory.mockUserInsertDTO();
+		
+		when(roleRepository.getReferenceById(20L)).thenThrow(EntityNotFoundException.class);
+		
+		assertThrows(ResourceNotFoundException.class, () -> service.save(insertDTO));
+		verify(repository, never()).save(any());
+		verify(roleRepository, times(1)).getReferenceById(20L);
+	}
+	
+	@Test
 	public void updateShouldThrowInvalidPasswordExceptionWhenPasswordIsInvalid() {
 		UserUpdateDTO updateDTO = UserMocksFactory.mockUserUpdateDTO();
 		User entity = UserMocksFactory.mockUserEntity();

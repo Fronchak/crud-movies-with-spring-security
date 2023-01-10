@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -19,12 +20,11 @@ public class UserInputDTO implements Serializable {
 	@Email(message = "Invalid email format, please try a valid email", 
 	regexp = "^\\w+([\\.-]?\\w+)*@\\w+([\\.-]?\\w+)*(\\.\\w{2,3})+$")
 	private String email;
-	
-	@NotNull(message = "User's password must be specified")
+
+	@NotBlank(message = "User's password cannot be empty")
 	@Size(min = 6, message = "User's password must have at least 6 letters")
 	private String password;
-	
-	@NotNull(message = "User's roles must be specified")
+
 	@NotEmpty(message = "User's roles cannot be empty, must have at least one role")
 	private Set<@NotNull(message = "User's role must be specified") RoleInputDTO> roles = new HashSet<>();
 	

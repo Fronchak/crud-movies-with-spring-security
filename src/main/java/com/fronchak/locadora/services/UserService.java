@@ -54,6 +54,9 @@ public class UserService implements UserDetailsService {
 			entity = repository.save(entity);
 			return mapper.convertEntityToOutputDTO(entity);		
 		}
+		catch(EntityNotFoundException e) {
+			throw new ResourceNotFoundException("Invalid role id");
+		}
 		catch(DataIntegrityViolationException e) {
 			throw new DatabaseException("Invalid role ID");
 		}

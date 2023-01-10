@@ -2,6 +2,7 @@ package com.fronchak.locadora.controllers.user;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -12,6 +13,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import com.fronchak.locadora.dtos.user.UserInsertDTO;
 import com.fronchak.locadora.dtos.user.UserOutputDTO;
+import com.fronchak.locadora.exceptions.ResourceNotFoundException;
 import com.fronchak.locadora.mocks.UserMocksFactory;
 import com.fronchak.locadora.util.CustomizeControllerAsserts;
 
@@ -134,6 +136,28 @@ public class UserSaveControllerTest extends AbstractUserControllerTest {
 	}
 	
 	@Test
+	public void saveShouldReturnUnprocessableEntityWhenOperatorIsLoggedButPasswordIsEmpty() throws Exception {
+		insertDTO.setPassword("       ");
+		convertInsertDTOToJson();
+		getOperatorToken();
+		
+		performPostWithToken();
+		
+		assertInvalidEmptyPassword(result);
+	}
+	
+	@Test
+	public void saveShouldReturnUnprocessableEntityWhenAdminIsLoggedButPasswordIsEmpty() throws Exception {
+		insertDTO.setPassword("       ");
+		convertInsertDTOToJson();
+		getAdminToken();
+		
+		performPostWithToken();
+		
+		assertInvalidEmptyPassword(result);
+	}
+	
+	@Test
 	public void saveShouldReturnUnprocessableEntityWhenOperatorIsLoggedButPasswordHasLessThan6Letters() throws Exception {
 		insertDTO.setPassword("12345");
 		convertInsertDTOToJson();
@@ -241,5 +265,27 @@ public class UserSaveControllerTest extends AbstractUserControllerTest {
 		
 		assertCreatedAndOutputDTO(result);
 		verify(service, times(1)).save(any(UserInsertDTO.class));
+	}
+	
+	@Test
+	public void saveShouldReturnNotFoundWhenOperatorIsLoggedButRoleIdIsInvalid() throws Exception {
+		convertInsertDTOToJson();
+		getOperatorToken();
+		doThrow(ResourceNotFoundException.class).when(service).save(any(UserInsertDTO.class));
+		
+		performPostWithToken();
+		
+		CustomizeControllerAsserts.assertNotFound(result);
+	}
+	
+	@Test
+	public void saveShouldReturnNotFoundWhenAdminIsLoggedButRoleIdIsInvalid() throws Exception {
+		convertInsertDTOToJson();
+		getAdminToken();
+		doThrow(ResourceNotFoundException.class).when(service).save(any(UserInsertDTO.class));
+		
+		performPostWithToken();
+		
+		CustomizeControllerAsserts.assertNotFound(result);
 	}
 }
