@@ -12,6 +12,8 @@ import org.springframework.web.context.request.WebRequest;
 
 import com.fronchak.locadora.exceptions.DatabaseException;
 import com.fronchak.locadora.exceptions.ExceptionResponse;
+import com.fronchak.locadora.exceptions.InvalidPasswordException;
+import com.fronchak.locadora.exceptions.OAuthCustomError;
 import com.fronchak.locadora.exceptions.ResourceNotFoundException;
 import com.fronchak.locadora.exceptions.ValidationExceptionResponse;
 
@@ -55,5 +57,20 @@ public class CustomizeResponseEntityExceptionResponse {
 		}
 		
 		return ResponseEntity.status(status).body(response);
+	}
+	
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity<ExceptionResponse> handleException(Exception e, WebRequest request) {
+		HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+		ExceptionResponse response = makeResponse(new ExceptionResponse(), e, request, status, "Internal Server Error");
+		return ResponseEntity.status(status).body(response);
+	}
+	
+	@ExceptionHandler(InvalidPasswordException.class)
+	public ResponseEntity<OAuthCustomError> handleInvalidPasswordException(InvalidPasswordException e, WebRequest request) {
+		OAuthCustomError response = new OAuthCustomError();
+		response.setError(InvalidPasswordException.getError());
+		response.setErrorDescription(e.getMessage());
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
 	}
 }

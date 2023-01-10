@@ -288,4 +288,26 @@ public class UserSaveControllerTest extends AbstractUserControllerTest {
 		
 		CustomizeControllerAsserts.assertNotFound(result);
 	}
+	
+	@Test
+	public void saveShouldReturnUnprocessableEntityWhenOperatorIsLoggedButEmailIsBeenUsed() throws Exception {
+		insertDTO.setEmail(USED_EMAIL);
+		convertInsertDTOToJson();
+		getOperatorToken();
+		
+		performPostWithToken();
+		
+		assertInvalidDuplicateEmail(result);
+	}
+	
+	@Test
+	public void saveShouldReturnUnprocessableEntityWhenAdminIsLoggedButEmailIsBeenUsed() throws Exception {
+		insertDTO.setEmail(USED_EMAIL);
+		convertInsertDTOToJson();
+		getAdminToken();
+		
+		performPostWithToken();
+		
+		assertInvalidDuplicateEmail(result);
+	}
 }

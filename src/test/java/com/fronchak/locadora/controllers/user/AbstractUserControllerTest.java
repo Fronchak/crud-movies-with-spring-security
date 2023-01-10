@@ -30,6 +30,9 @@ public abstract class AbstractUserControllerTest {
 	private static final String ADMIN_USERNAME = "fronchak@gmail.com";
 	private static final String ADMIN_PASSWORD = "123456";
 	
+	protected static final String USED_EMAIL = "fronchak@gmail.com";
+	protected static final String NOT_USED_EMAIL = "gmack123@gmail.com";
+	
 	protected String accessToken;
 	
 	protected static MediaType MEDIA_TYPE = MediaType.APPLICATION_JSON;
@@ -141,5 +144,16 @@ public abstract class AbstractUserControllerTest {
 	protected void assertCreatedAndOutputDTO(ResultActions result) throws Exception {
 		CustomizeControllerAsserts.assertCreated(result);
 		assertOutputDTO(result);
+	}
+	
+	protected void assertInvalidPasswordException(ResultActions result) throws Exception {
+		CustomizeControllerAsserts.assertBadRequest(result);
+		result.andExpect(jsonPath("$.error").value("invalid_grant"));
+	}
+	
+	protected void assertInvalidDuplicateEmail(ResultActions result) throws Exception {
+		CustomizeControllerAsserts.assertUnprocessableEntity(result);
+		result.andExpect(jsonPath("$.errors[0].fieldName").value("email"));
+		result.andExpect(jsonPath("$.errors[0].message").value("Email already been used, please choose another one"));
 	}
 }

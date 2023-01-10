@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import com.fronchak.locadora.dtos.user.UserOutputDTO;
 import com.fronchak.locadora.dtos.user.UserUpdateDTO;
+import com.fronchak.locadora.exceptions.InvalidPasswordException;
 import com.fronchak.locadora.exceptions.ResourceNotFoundException;
 import com.fronchak.locadora.mocks.UserMocksFactory;
 import com.fronchak.locadora.util.CustomizeControllerAsserts;
@@ -354,6 +355,30 @@ public class UserUpdateControllerTest extends AbstractUserControllerTest {
 		performPutMethodWithToken(EXISTING_ID);
 		
 		assertSuccessAndOutputDTO(result);
+		verify(service, times(1)).update(any(UserUpdateDTO.class), eq(EXISTING_ID));
+	}
+	
+	@Test
+	public void updateShouldReturnBadRequestWhenOperatorIsLoggedAndOldPasswordIsInvalid() throws Exception {
+		convertUpdateDTOToJson();
+		doThrow(InvalidPasswordException.class).when(service).update(any(UserUpdateDTO.class), eq(EXISTING_ID));
+		getOperatorToken();
+		
+		performPutMethodWithToken(EXISTING_ID);
+		
+		assertInvalidPasswordException(result);
+		verify(service, times(1)).update(any(UserUpdateDTO.class), eq(EXISTING_ID));
+	}
+	
+	@Test
+	public void updateShouldReturnBadRequestWhenAdminIsLoggedAndOldPasswordIsInvalid() throws Exception {
+		convertUpdateDTOToJson();
+		doThrow(InvalidPasswordException.class).when(service).update(any(UserUpdateDTO.class), eq(EXISTING_ID));
+		getAdminToken();
+		
+		performPutMethodWithToken(EXISTING_ID);
+		
+		assertInvalidPasswordException(result);
 		verify(service, times(1)).update(any(UserUpdateDTO.class), eq(EXISTING_ID));
 	}
 }
