@@ -3,6 +3,9 @@ package com.fronchak.locadora.dtos.user;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 
+import com.fronchak.locadora.validations.user.UserUpdateValid;
+
+@UserUpdateValid
 public class UserUpdateDTO extends UserInputDTO {
 
 	private static final long serialVersionUID = 1L;

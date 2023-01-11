@@ -24,7 +24,7 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
 	
 	private static final String[] PUBLIC = { "/oauth/token", "/h2-console/**" };
 	
-	private static final String[] AT_LEAST_CLIENT = { "/movies/**" };
+	private static final String[] MOVIES = { "/movies/**" };
 	
 	private static final String[] OPERATOR_OR_ADMIN = { "/users/**" };
  	
@@ -42,14 +42,11 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
 		
 		http.authorizeRequests()
 			.antMatchers(PUBLIC).permitAll()
-			.antMatchers(HttpMethod.GET, AT_LEAST_CLIENT).hasAnyRole("CLIENT", "OPERATOR", "ADMIN")
-			.antMatchers(HttpMethod.POST, AT_LEAST_CLIENT).hasAnyRole("OPERATOR", "ADMIN")
-			.antMatchers(HttpMethod.PUT, AT_LEAST_CLIENT).hasAnyRole("OPERATOR", "ADMIN")
-			.antMatchers(HttpMethod.GET, OPERATOR_OR_ADMIN).hasAnyRole("OPERATOR", "ADMIN")
-			.antMatchers(HttpMethod.POST, OPERATOR_OR_ADMIN).hasAnyRole("OPERATOR", "ADMIN")
-			.antMatchers(HttpMethod.PUT, OPERATOR_OR_ADMIN).hasAnyRole("OPERATOR", "ADMIN")
+			.antMatchers(HttpMethod.GET, MOVIES).hasAnyRole("CLIENT", "OPERATOR", "ADMIN")
+			.antMatchers(HttpMethod.DELETE, MOVIES).hasRole("ADMIN")
+			.antMatchers(MOVIES).hasAnyRole("OPERATOR", "ADMIN")
 			.antMatchers(HttpMethod.DELETE, OPERATOR_OR_ADMIN).hasRole("ADMIN")
-			.antMatchers(HttpMethod.DELETE, AT_LEAST_CLIENT).hasRole("ADMIN")
+			.antMatchers(OPERATOR_OR_ADMIN).hasAnyRole("OPERATOR", "ADMIN")
 			.anyRequest().authenticated();
 	}
 

@@ -381,4 +381,52 @@ public class UserUpdateControllerTest extends AbstractUserControllerTest {
 		assertInvalidPasswordException(result);
 		verify(service, times(1)).update(any(UserUpdateDTO.class), eq(EXISTING_ID));
 	}
+	
+	@Test
+	public void updateShouldReturnUnprocessableEntityWhenOperatorIsLoggedButEmailIsDuplicated() throws Exception {
+		updateDTO.setEmail(USED_EMAIL);
+		convertUpdateDTOToJson();
+		getOperatorToken();
+		
+		performPutMethodWithToken(EXISTING_ID);
+		
+		assertInvalidDuplicateEmail(result);
+	}
+	
+	@Test
+	public void updateShouldReturnUnprocessableEntityWhenAdminIsLoggedButEmailIsDuplicated() throws Exception {
+		updateDTO.setEmail(USED_EMAIL);
+		convertUpdateDTOToJson();
+		getAdminToken();
+		
+		performPutMethodWithToken(EXISTING_ID);
+		
+		assertInvalidDuplicateEmail(result);
+	}
+	
+	@Test
+	public void updateShouldReturnSuccessWhenOperatorIsLoggedAndTheSameEmailIsFromEntityBeenUpdated() throws Exception {
+		updateDTO.setEmail("gabriel@gmail.com");
+		convertUpdateDTOToJson();
+		getOperatorToken();
+		doReturn(outputDTO).when(service).update(any(UserUpdateDTO.class), eq(1L));
+		
+		performPutMethodWithToken(1L);
+		
+		assertSuccessAndOutputDTO(result);
+		verify(service, times(1)).update(any(UserUpdateDTO.class), eq(1L));
+	}
+	
+	@Test
+	public void updateShouldReturnSuccessWhenAdminIsLoggedAndTheSameEmailIsFromEntityBeenUpdated() throws Exception {
+		updateDTO.setEmail("gabriel@gmail.com");
+		convertUpdateDTOToJson();
+		getAdminToken();
+		doReturn(outputDTO).when(service).update(any(UserUpdateDTO.class), eq(1L));
+		
+		performPutMethodWithToken(1L);
+		
+		assertSuccessAndOutputDTO(result);
+		verify(service, times(1)).update(any(UserUpdateDTO.class), eq(1L));
+	}
 }
